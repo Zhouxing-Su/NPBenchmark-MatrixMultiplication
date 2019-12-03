@@ -1,0 +1,69 @@
+// # 概述
+// 使用 Google 的 Protocol Buffer (简称 protobuf) 定义.
+// 矩阵乘法优化问题原始输入输出数据格式.
+// MatrixMultiplication 定义了算法所需的全部数据.
+// MatrixMultiplication.Input 定义了算法所需的全部输入数据.
+// MatrixMultiplication.Output 定义了算法所需的全部输出数据, 应输出至提交文件的第二行以后.
+// MatrixMultiplication.Submission 定义了向测评系统提交的计算结果文件的信息摘要, 应输出至提交文件的第一行.
+
+
+syntax = "proto3";
+
+package pb;
+
+option java_package = "pb";
+option java_outer_classname = "MatrixMultiplication";
+// option cc_enable_arenas = true;
+
+
+// 主要数据.
+message MatrixMultiplication {
+  message Input { // 输入.
+    int32 rowNumA = 1; // A 矩阵行数 (子阵数量).
+    int32 numRCAB = 2; // A 矩阵列数 B 矩阵行数 (子阵数量).
+    int32 colNumB = 3; // B 矩阵列数 (子阵数量).
+
+    int32 refMultiplicationNum = 4; // 最优乘法数量参考值.
+  }
+	
+  message Output { // 输出.
+    repeated Intermediate intermediates = 1; // 中间矩阵列表.
+    repeated LinearExpression exprs = 2; // `exprs[r * colNum + c]` 表示子阵 C[r, c] 的计算公式. 该公式为中间矩阵的线性运算.
+  }
+
+  message LinearExpression { // 线性表达式信息.
+    repeated Term terms = 1; // 该表达式包含的项.
+  }
+
+  message Term { // 表达式项信息.
+    double coef = 1; // 系数.
+    int32 id = 2; // 子阵或中间矩阵的编号. 从 0 开始连续编号. 表示子阵编号时满足 `id = r * colNum + c`.
+  }
+
+  message Intermediate { // 中间矩阵信息. 中间矩阵为两个线性表达式的乘积.
+    LinearExpression sumA = 1; // A 矩阵中的子阵的线性运算.
+    LinearExpression sumB = 2; // B 矩阵中的子阵的线性运算.
+  }
+}
+
+message Submission { // 测评系统提交信息摘要.
+  // 应在 SDK 内由提交者手工填写的数据项.
+  string author = 1; // 提交者姓名.
+  string algorithm = 2; // 算法名称.
+  string thread = 3; // 算法线程数
+  string cpu = 4; // 处理器型号与主频.
+  string ram = 5; // 内存容量与频率. (Windows 下可以使用 wmic memorychip 命令查看)
+  string language = 6; // 编程语言.
+  string compiler = 7; // 编译器.
+  string os = 8; // 操作系统
+
+  // 由 SDK 自动记录的数据项.
+  string problem = 21; // 问题名称.
+  string instance = 22; // 算例名称.
+  string duration = 23; // 求解耗时.
+
+  // 由服务器自动计算的数据项.
+  double obj = 31; // 计算结果目标函数值.
+  string email = 32; // 提交者邮箱.
+  string date = 33; // 提交时间.
+}
