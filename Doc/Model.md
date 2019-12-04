@@ -203,21 +203,21 @@ $$
 For a non-zero term, its sign depends on if the number of $-1$ is even or odd.
 
 $$
-\text{EvenNegOne}(v, i, i', j, j', k, k') = r^{v-}_{ij} \oplus p^{v-}_{i'k} \oplus q^{v-}_{k'j'} \oplus 1
+\text{OddNegOne}(v, i, i', j, j', k, k') = r^{v-}_{ij} \oplus p^{v-}_{i'k} \oplus q^{v-}_{k'j'}
 $$
 
 $$
-\text{OddNegOne}(v, i, i', j, j', k, k') = r^{v-}_{ij} \oplus p^{v-}_{i'k} \oplus q^{v-}_{k'j'}
+\text{EvenNegOne}(v, i, i', j, j', k, k') = r^{v-}_{ij} \oplus p^{v-}_{i'k} \oplus q^{v-}_{k'j'} \oplus 1
 $$
 
 Then, the numbers of positive ones $\text{Ones}(i, i', j, j', k, k')$ and negative ones $\text{NegOnes}(i, i', j, j', k, k')$ in each equation among Equations $(\ref{coef_exist})$ and $(\ref{coef_non_exist})$ can be counted as follows.
 
 $$
-\text{Ones}(i, i', j, j', k, k') = \sum^{u}_{v=1} \big( \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{EvenNegOne}(v, i, i', j, j', k, k') \big)
+\text{NegOnes}(i, i', j, j', k, k') = \sum^{u}_{v=1} \big( \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{OddNegOne}(v, i, i', j, j', k, k') \big)
 $$
 
 $$
-\text{NegOnes}(i, i', j, j', k, k') = \sum^{u}_{v=1} \big( \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{OddNegOne}(v, i, i', j, j', k, k') \big)
+\text{Ones}(i, i', j, j', k, k') = \sum^{u}_{v=1} \big( \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{EvenNegOne}(v, i, i', j, j', k, k') \big)
 $$
 
 In order to make both sides equal in Equations $(\ref{coef_exist})$ and $(\ref{coef_non_exist})$, the number of the ones and the negative ones must satisfy the following criteria.
@@ -240,64 +240,32 @@ Then, Equations $(\ref{coef_exist})$ and $(\ref{coef_non_exist})$ are encoded in
 ### Formulating Exclusive Or Operator
 
 It is easy to convert Equations $(\ref{exclusive})$,  $(\ref{coef_exist_cnf})$, and $(\ref{coef_non_exist_cnf})$ into an MIP model. The only obstacle is the XOR operator.
-Let $e^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ indicate whether $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{0, 2\}$, i.e., $e^{v}_{ii'jj'kk'} = \text{EvenNegOne}(v, i, i', j, j', k, k')$.
-Let $o^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ indicate whether $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{1, 3\}$, i.e., $o^{v}_{ii'jj'kk'} = \text{OddNegOne}(v, i, i', j, j', k, k')$.
+Let $o^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ indicate whether $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{1, 3\}$, i.e., $o^{v}_{ii'jj'kk'} = \text{OddNegOne}(v, i, i', j, j', k, k')$. Then $1 - o^{v}_{ii'jj'kk'}$ indicate whether $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{0, 2\}$, i.e., $1 - o^{v}_{ii'jj'kk'} = \text{EvenNegOne}(v, i, i', j, j', k, k')$, since a number must be either even or odd.
 Let $y^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ be the auxiliary variables for linearizing the or logic.
-$$
-\begin{align}
-\begin{aligned}
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \ge 3 - 2 y^{v}_{ii'jj'kk'} - 3 e^{v}_{ii'jj'kk'} \\
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \le 1 + 2 (1 - y^{v}_{ii'jj'kk'}) + 3 e^{v}_{ii'jj'kk'}
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m] \label{is_even}
-\end{align}
-$$
 
 $$
-\begin{align}
-\begin{aligned}
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \ge 2 - 2 y^{v}_{ii'jj'kk'} - 2 o^{v}_{ii'jj'kk'} \\
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \le 2 (1 - y^{v}_{ii'jj'kk'}) + 2 o^{v}_{ii'jj'kk'}
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m] \label{is_odd}
-\end{align}
+r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} = 2 y^{v}_{ii'jj'kk'} + o^{v}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
-
-If $(e^{v}_{ii'jj'kk'} = 0) \wedge (o^{v}_{ii'jj'kk'} = 0)$, Equations $(\ref{is_even})$ require $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{1, 3\}$, and Equations $(\ref{is_odd})$ require $(r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'}) \in \{0, 2\}$.
-Since it can never satisfy both Equations $(\ref{is_even})$ and $(\ref{is_odd})$ when $(e^{v}_{ii'jj'kk'} = 0) \wedge (o^{v}_{ii'jj'kk'} = 0)$, $y^{v}_{ii'jj'kk'}$ can be reused.
-Also, each product term must be either even or odd.
-
-$$
-e^{v}_{ii'jj'kk'} + o^{v}_{ii'jj'kk'} = 1, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m] \label{even_odd_choice}
-$$
-
-Substituting $o^{v}_{ii'jj'kk'}$ with $1 - e^{v}_{ii'jj'kk'}$ in Equations $(\ref{is_odd})$ will eliminate variables $o^{v}_{ii'jj'kk'}$ and Equations $(\ref{even_odd_choice})$.
 
 ### Other Logical Operators
 
-For the rest parts, $\text{NonZero}(v, i, i', j, j', k, k')$ can be easily replaced with variables $z^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ by applying the technique that $\left( y = \bigwedge^{n}_{i=1} x_{i} \right) \Leftrightarrow \left( 0 \le \sum^{n}_{i=1} x_{i} - n y \le n - 1 \right)$ (note that $x, y, n, i$ are irrelevant to other contents in this document).
+For the rest parts, $\text{NonZero}(v, i, i', j, j', k, k')$ can be easily replaced with variables $z^{v}_{ii'jj'kk'} \in \{0, 1\}, \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]$ by applying the technique that $\left( y = \bigwedge^{n}_{i=1} x_{i} \right) \Leftrightarrow \left( 0 \le \sum^{n}_{i=1} x_{i} - n y \le n - 1 \right)$ (note that $x, y, n, i$ in this sentence are irrelevant to other contents in this document).
 
 $$
-\begin{align}
-\begin{aligned}
-r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} & \ge 3 z^{v}_{ii'jj'kk'} \\
-r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} & \le 2 + z^{v}_{ii'jj'kk'}
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
+3 z^{v}_{ii'jj'kk'} \le r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} \le 2 + z^{v}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 \label{non_zero_var}
-\end{align}
 $$
 
-Equations $(\ref{non_zero_var})$ are sufficient to derive $z^{v}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k')$ due to Equations $(\ref{exclusive})$.
+Equations $(\ref{non_zero_var})$ are sufficient to derive $z^{v}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k')$ due to Equations $(\ref{exclusive})$, i.e., we are summing 6 variables but using 3 as the bound.
 
-We can formulate $x^{v+}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{EvenNegOne}(v, i, i', j, j', k, k')$ and $x^{v-}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{OddNegOne}(v, i, i', j, j', k, k')$ by the same technique.
-
-$$
-2 x^{v+}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + e^{v}_{ii'jj'kk'} \le 1 + x^{v+}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
-$$
+We can formulate $x^{v-}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{OddNegOne}(v, i, i', j, j', k, k')$ and $x^{v+}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k') \wedge \text{EvenNegOne}(v, i, i', j, j', k, k')$ by the same technique.
 
 $$
 2 x^{v-}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + o^{v}_{ii'jj'kk'} \le 1 + x^{v-}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
+$$
+
+$$
+2 x^{v+}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + (1 - o^{v}_{ii'jj'kk'}) \le 1 + x^{v+}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
 ### Complete Model
@@ -311,7 +279,7 @@ $$
 | $q^{v+}_{ij}$         | $\text{bool}(q^{v}_{ij} = 1)$             |        |
 | $q^{v-}_{ij}$         | $\text{bool}(q^{v}_{ij} = -1)$            |        |
 |                       | define alias $\pi^{v}_{ii'jj'kk'} = r^{v}_{ij} p^{v}_{i'k} q^{v}_{k'j'}$ to be used later |  |
-| $e^{v}_{ii'jj'kk'}$   | $\left( (e = 1) \Leftrightarrow (\pi \ne -1) \right) \wedge \left( (e = 0) \Leftrightarrow (\pi \ne 1) \right)$ | $e^{v}_{ii'jj'kk'} = \text{EvenNegOne}(v, i, i', j, j', k, k')$ |
+| $o^{v}_{ii'jj'kk'}$   | $\left( (o = 1) \Leftrightarrow (\pi \ne 1) \right) \wedge \left( (o = 0) \Leftrightarrow (\pi \ne -1) \right)$ | $o^{v}_{ii'jj'kk'} = \text{OddNegOne}(v, i, i', j, j', k, k')$ |
 | $y^{v}_{ii'jj'kk'}$   | auxiliary variable                        |        |
 | $z^{v}_{ii'jj'kk'}$   | $\text{bool}(\pi \ne 0)$  | $z^{v}_{ii'jj'kk'} = \text{NonZero}(v, i, i', j, j', k, k')$ |
 | $x^{v+}_{ii'jj'kk'}$   | $\text{bool}(\pi = 1)$ | $x^{v+}_{ii'jj'kk'} = z^{v}_{ii'jj'kk'} \wedge e^{v}_{ii'jj'kk'}$ |
@@ -334,41 +302,19 @@ q^{v+}_{ij} + q^{v-}_{ij} \le 1, \quad \forall v \in [1, u], \forall i, j \in [1
 $$
 
 $$
-\begin{align}
-\begin{aligned}
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \ge 3 - 2 y^{v}_{ii'jj'kk'} - 3 e^{v}_{ii'jj'kk'} \\
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \le 1 + 2 (1 - y^{v}_{ii'jj'kk'}) + 3 e^{v}_{ii'jj'kk'}
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
-\end{align}
+r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} = 2 y^{v}_{ii'jj'kk'} + o^{v}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
 $$
-\begin{align}
-\begin{aligned}
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \ge 2 - 2 y^{v}_{ii'jj'kk'} - 2 (1 - e^{v}_{ii'jj'kk'}) \\
-r^{v-}_{ij} + p^{v-}_{i'k} + q^{v-}_{k'j'} & \le 2 (1 - y^{v}_{ii'jj'kk'}) + 2 (1 - e^{v}_{ii'jj'kk'})
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
-\end{align}
+3 z^{v}_{ii'jj'kk'} \le r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} \le 2 + z^{v}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
 $$
-\begin{align}
-\begin{aligned}
-r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} & \ge 3 z^{v}_{ii'jj'kk'} \\
-r^{v+}_{ij} + r^{v-}_{ij} + p^{v+}_{i'k} + p^{v-}_{i'k} + q^{v+}_{k'j'} + q^{v-}_{k'j'} & \le 2 + z^{v}_{ii'jj'kk'}
-\end{aligned}
-, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
-\end{align}
+2 x^{v-}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + o^{v}_{ii'jj'kk'} \le 1 + x^{v-}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
 $$
-2 x^{v+}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + e^{v}_{ii'jj'kk'} \le 1 + x^{v+}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
-$$
-
-$$
-2 x^{v-}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + (1 - e^{v}_{ii'jj'kk'}) \le 1 + x^{v-}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
+2 x^{v+}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + (1 - o^{v}_{ii'jj'kk'}) \le 1 + x^{v+}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
 $$

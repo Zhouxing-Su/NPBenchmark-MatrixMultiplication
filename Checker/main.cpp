@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
         IoError = 0x0,
         FormatError = 0x1,
         WorsePerformanceError = 0x2,
-        WrongResultError = 0x4
+        WorstPerformanceError = 0x4,
+        WrongResultError = 0x8
     };
 
     string inputPath;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]) {
     };
 
     if (output.exprs().size() != (rowNum * colNum)) { return ~CheckerFlag::FormatError; }
-    if (mulNum >= (rowNum * input.numrcab() * colNum)) { return ~CheckerFlag::WorsePerformanceError; }
+    if (mulNum > (rowNum * input.numrcab() * colNum)) { return ~CheckerFlag::WorstPerformanceError; }
     if (mulNum > input.refmultiplicationnum()) { return ~CheckerFlag::WorsePerformanceError; }
 
     // check solution.
@@ -114,8 +115,58 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
     // check objective.
     int multiplicationNum = mulNum;
+
+    // visualization.
+    auto pos = outputPath.find_last_of('/');
+    string outputName = (pos == string::npos) ? outputPath : outputPath.substr(pos + 1);
+    ofstream ofs("Visualization/" + outputName + ".nb");
+    auto writeExpr = [&](const pb::MatrixMultiplication_LinearExpression &expr, char name, bool flatId) {
+        bool isBegin = true;
+        for (auto t = expr.terms().begin(); t != expr.terms().end(); ++t) {
+            if (t->coef() == 0) { continue; }
+            char sign = (t->coef() > 0) ? '+' : '-';
+            if (t->coef() > 0) {
+                if (!isBegin) { ofs << '+'; }
+                if (t->coef() != 1) { ofs << t->coef(); }
+            } else {
+                ofs << '-';
+                if (t->coef() != -1) { ofs << -t->coef(); }
+            }
+            if (flatId) {
+                ofs << name << t->id();
+            } else {
+                ofs << name << getRow(t->id()) << getCol(t->id()); // TODO[szx][5]: what if there are more than 9 rows or columns?
+            }
+            isBegin = false;
+        }
+    };
+    for (int v = 0; v < mulNum; ++v) {
+        ofs << "m" << v << "=(";
+        writeExpr(output.intermediates(v).suma(), 'a', false);
+        ofs << ")(";
+        writeExpr(output.intermediates(v).sumb(), 'b', false);
+        ofs << ")" << endl;
+    }
+    ofs << endl;
+    for (int i = 0, id = 0; i < rowNum; ++i) {
+        for (int j = 0; j < colNum; ++j, ++id) {
+            ofs << "c" << i << j << "="; // TODO[szx][5]: what if there are more than 9 rows or columns?
+            writeExpr(output.exprs(id), 'm', true);
+            ofs << endl;
+        }
+    }
+    ofs << endl << "TraditionalForm[Simplify[{";
+    for (int i = 0; i < rowNum; ++i) {
+        ofs << "{";
+        ofs << "c" << i << 0;
+        for (int j = 1; j < colNum; ++j) { ofs << ",c" << i << j; } // TODO[szx][5]: what if there are more than 9 rows or columns?
+        ofs << "}";
+        if (i < rowNum - 1) { ofs << ","; }
+    }
+    ofs << "}]]" << endl;
 
     int returnCode = (error == 0) ? multiplicationNum : ~error;
     cout << ((error == 0) ? multiplicationNum : returnCode) << endl;

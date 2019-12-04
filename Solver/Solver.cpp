@@ -174,7 +174,7 @@ bool Solver::solve() {
 
     Log(LogSwitch::Szx::Framework) << "collect best result among all workers." << endl;
     int bestIndex = -1;
-    Length bestValue = input.naiveMultiplicationNum();
+    Length bestValue = input.naiveMultiplicationNum() + 1;
     for (int i = 0; i < workerNum; ++i) {
         if (!success[i]) { continue; }
         Log(LogSwitch::Szx::Framework) << "worker " << i << " got " << solutions[i].multiplicationNum << endl;
@@ -236,7 +236,9 @@ bool Solver::check(Length &checkerObj) const {
     enum CheckerFlag {
         IoError = 0x0,
         FormatError = 0x1,
-        ColorConflictError = 0x2
+        WorsePerformanceError = 0x2,
+        WorstPerformanceError = 0x4,
+        WrongResultError = 0x8
     };
 
     checkerObj = System::exec("Checker.exe " + env.instPath + " " + env.solutionPathWithTime());
@@ -244,7 +246,9 @@ bool Solver::check(Length &checkerObj) const {
     checkerObj = ~checkerObj;
     if (checkerObj == CheckerFlag::IoError) { Log(LogSwitch::Checker) << "IoError." << endl; }
     if (checkerObj & CheckerFlag::FormatError) { Log(LogSwitch::Checker) << "FormatError." << endl; }
-    if (checkerObj & CheckerFlag::ColorConflictError) { Log(LogSwitch::Checker) << "ColorConflictError." << endl; }
+    if (checkerObj & CheckerFlag::WorsePerformanceError) { Log(LogSwitch::Checker) << "WorsePerformanceError." << endl; }
+    if (checkerObj & CheckerFlag::WorstPerformanceError) { Log(LogSwitch::Checker) << "WorstPerformanceError." << endl; }
+    if (checkerObj & CheckerFlag::WrongResultError) { Log(LogSwitch::Checker) << "WrongResultError." << endl; }
     return false;
     #else
     checkerObj = 0;
@@ -262,7 +266,7 @@ bool Solver::optimize(Solution &sln, ID workerId) {
     // reset solution state.
     bool status = false;
 
-    //status = optimizeBoolDecisionModel(sln);
+    status = optimizeBoolDecisionModel(sln);
     //status = optimizeRelaxedBoolDecisionModel(sln);
     //status = optimizeIntegerDecisionModel(sln);
     //status = optimizeLocalSearch(sln);
@@ -276,6 +280,7 @@ bool Solver::optimize(Solution &sln, ID workerId) {
 
 bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     using Dvar = MpSolver::DecisionVar;
+    using Expr = MpSolver::LinearExpr;
 
     int rowNum = input.rownuma();
     int colNum = input.colnumb();
@@ -284,9 +289,6 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     auto getRow = [&](int id) { return id / colNum; };
     auto getCol = [&](int id) { return id % colNum; };
     auto getId = [&](int row, int col) { return (row * colNum) + col; };
-
-    auto &intermediates(*sln.mutable_intermediates());
-    auto &exprs(*sln.mutable_exprs());
     
     MpSolver mp;
 
@@ -297,7 +299,7 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     Arr<Arr2D<Dvar>> pNeg(mulNum, Arr2D<Dvar>(rowNum, numRC));
     Arr<Arr2D<Dvar>> qPos(mulNum, Arr2D<Dvar>(numRC, colNum));
     Arr<Arr2D<Dvar>> qNeg(mulNum, Arr2D<Dvar>(numRC, colNum));
-    Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> e(mulNum);
+    Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> o(mulNum);
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> y(mulNum);
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> z(mulNum);
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> xPos(mulNum);
@@ -305,54 +307,54 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID j = 0; j < colNum; ++j) {
-                rPos[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                rNeg[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                rPos[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                rNeg[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
             }
         }
     }
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID j = 0; j < numRC; ++j) {
-                pPos[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                pNeg[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                pPos[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                pNeg[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
             }
         }
     }
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < numRC; ++i) {
             for (ID j = 0; j < colNum; ++j) {
-                qPos[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                qNeg[mulNum][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                qPos[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                qNeg[v][i][j] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
             }
         }
     }
     for (ID v = 0; v < mulNum; ++v) {
-        e[v].init(rowNum, rowNum);
+        o[v].init(rowNum, rowNum);
         y[v].init(rowNum, rowNum);
         z[v].init(rowNum, rowNum);
         xPos[v].init(rowNum, rowNum);
         xNeg[v].init(rowNum, rowNum);
         for (ID i = 0; i < rowNum; ++i) {
             for (ID ii = 0; ii < rowNum; ++ii) {
-                e[v][i][ii].init(colNum, colNum);
+                o[v][i][ii].init(colNum, colNum);
                 y[v][i][ii].init(colNum, colNum);
                 z[v][i][ii].init(colNum, colNum);
                 xPos[v][i][ii].init(colNum, colNum);
                 xNeg[v][i][ii].init(colNum, colNum);
                 for (ID j = 0; j < colNum; ++j) {
                     for (ID jj = 0; jj < colNum; ++jj) {
-                        e[v][i][ii][j][jj].init(numRC, numRC);
+                        o[v][i][ii][j][jj].init(numRC, numRC);
                         y[v][i][ii][j][jj].init(numRC, numRC);
                         z[v][i][ii][j][jj].init(numRC, numRC);
                         xPos[v][i][ii][j][jj].init(numRC, numRC);
                         xNeg[v][i][ii][j][jj].init(numRC, numRC);
                         for (ID k = 0; k < numRC; ++k) {
                             for (ID kk = 0; kk < numRC; ++kk) {
-                                e[mulNum][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                                y[mulNum][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                                z[mulNum][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                                xPos[mulNum][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
-                                xNeg[mulNum][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                                o[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                                y[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                                z[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                                xPos[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                                xNeg[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
                             }
                         }
                     }
@@ -366,26 +368,74 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID j = 0; j < colNum; ++j) {
-                mp.addConstraint(rPos[mulNum][i][j] + rNeg[mulNum][i][j] <= 1);
+                mp.addConstraint(rPos[v][i][j] + rNeg[v][i][j] <= 1);
             }
         }
     }
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID j = 0; j < numRC; ++j) {
-                mp.addConstraint(pPos[mulNum][i][j] + pNeg[mulNum][i][j] <= 1);
+                mp.addConstraint(pPos[v][i][j] + pNeg[v][i][j] <= 1);
             }
         }
     }
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < numRC; ++i) {
             for (ID j = 0; j < colNum; ++j) {
-                mp.addConstraint(qPos[mulNum][i][j] + qNeg[mulNum][i][j] <= 1);
+                mp.addConstraint(qPos[v][i][j] + qNeg[v][i][j] <= 1);
             }
         }
     }
 
-    // 
+    for (ID v = 0; v < mulNum; ++v) {
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID ii = 0; ii < rowNum; ++ii) {
+                for (ID j = 0; j < colNum; ++j) {
+                    for (ID jj = 0; jj < colNum; ++jj) {
+                        for (ID k = 0; k < numRC; ++k) {
+                            for (ID kk = 0; kk < numRC; ++kk) {
+                                // non-positive or non-negative.
+                                mp.addConstraint(rNeg[v][i][j] + pNeg[v][ii][k] + qNeg[v][kk][jj] == 2 * y[v][i][ii][j][jj][k][kk] + o[v][i][ii][j][jj][k][kk]);
+
+                                // non-zero.
+                                Expr sum = rPos[v][i][j] + rNeg[v][i][j] + pPos[v][ii][k] + pNeg[v][ii][k] + qPos[v][kk][jj] + qNeg[v][kk][jj];
+                                mp.addConstraint(3 * z[v][i][ii][j][jj][k][kk] <= sum);
+                                mp.addConstraint(sum <= 2 + z[v][i][ii][j][jj][k][kk]);
+
+                                // negative one.
+                                mp.addConstraint(2 * xNeg[v][i][ii][j][jj][k][kk] <= z[v][i][ii][j][jj][k][kk] + o[v][i][ii][j][jj][k][kk]);
+                                mp.addConstraint(z[v][i][ii][j][jj][k][kk] + o[v][i][ii][j][jj][k][kk] <= 1 + xNeg[v][i][ii][j][jj][k][kk]);
+                                // positive one.
+                                mp.addConstraint(2 * xPos[v][i][ii][j][jj][k][kk] <= z[v][i][ii][j][jj][k][kk] + 1 - o[v][i][ii][j][jj][k][kk]);
+                                mp.addConstraint(z[v][i][ii][j][jj][k][kk] + 1 - o[v][i][ii][j][jj][k][kk] <= 1 + xPos[v][i][ii][j][jj][k][kk]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // matched terms.
+    for (ID i = 0; i < rowNum; ++i) {
+        for (ID ii = 0; ii < rowNum; ++ii) {
+            for (ID j = 0; j < colNum; ++j) {
+                for (ID jj = 0; jj < colNum; ++jj) {
+                    for (ID k = 0; k < numRC; ++k) {
+                        for (ID kk = 0; kk < numRC; ++kk) {
+                            Expr sum;
+                            for (ID v = 0; v < mulNum; ++v) {
+                                sum += xPos[v][i][ii][j][jj][k][kk];
+                                sum -= xNeg[v][i][ii][j][jj][k][kk];
+                            }
+                            bool termExists = ((i == ii) && (j == jj) && (k == kk));
+                            mp.addConstraint(sum == termExists);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // solve model.
     mp.setOutput(true);
@@ -394,14 +444,61 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     //mp.setMipFocus(MpSolver::MipFocusMode::ImproveFeasibleSolution);
 
     // record decision.
-    //if (mp.optimize()) {
-    //    for (ID n = 0; n < nodeNum; ++n) {
-    //        for (ID c = 0; c < input.colornum(); ++c) {
-    //            if (mp.isTrue(isColor.at(n, c))) { nodeColors[n] = c; break; }
-    //        }
-    //    }
-    //    return true;
-    //}
+    if (mp.optimize()) {
+        // init solution vector.
+        auto &intermediates(*sln.mutable_intermediates());
+        intermediates.Reserve(mulNum);
+        for (ID v = 0; v < mulNum; ++v) { intermediates.Add(); }
+
+        auto &exprs(*sln.mutable_exprs());
+        exprs.Reserve(rowNum * colNum);
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) { exprs.Add(); }
+        }
+
+        // retrieve values.
+        auto addTerm = [&](pb::MatrixMultiplication_LinearExpression &expr, ID id, double coef) {
+            auto &term(*expr.add_terms());
+            term.set_id(id);
+            term.set_coef(coef);
+        };
+        for (ID v = 0; v < mulNum; ++v) {
+            for (ID i = 0, id = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < colNum; ++j, ++id) {
+                    if (mp.isTrue(rPos[v][i][j])) {
+                        addTerm(exprs[id], v, 1);
+                    } else if (mp.isTrue(rNeg[v][i][j])) {
+                        addTerm(exprs[id], v, -1);
+                    } // else (r == 0).
+                }
+            }
+        }
+        for (ID v = 0; v < mulNum; ++v) {
+            auto &expr(*intermediates[v].mutable_suma());
+            for (ID i = 0, id = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < numRC; ++j, ++id) {
+                    if (mp.isTrue(pPos[v][i][j])) {
+                        addTerm(expr, id, 1);
+                    } else if (mp.isTrue(pNeg[v][i][j])) {
+                        addTerm(expr, id, -1);
+                    } // else (p == 0).
+                }
+            }
+        }
+        for (ID v = 0; v < mulNum; ++v) {
+            auto &expr(*intermediates[v].mutable_sumb());
+            for (ID i = 0, id = 0; i < numRC; ++i) {
+                for (ID j = 0; j < colNum; ++j, ++id) {
+                    if (mp.isTrue(qPos[v][i][j])) {
+                        addTerm(expr, id, 1);
+                    } else if (mp.isTrue(qNeg[v][i][j])) {
+                        addTerm(expr, id, -1);
+                    } // else (q == 0).
+                }
+            }
+        }
+        return true;
+    }
 
     return false;
 }

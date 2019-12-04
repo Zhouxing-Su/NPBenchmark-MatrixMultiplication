@@ -21,6 +21,7 @@ namespace szx {
 
 // EXTEND[szx][5]: read it from InstanceList.txt.
 static const vector<String> instList({
+    "square.2x2x2m8", // trivial case.
     "square.2x2x2m7",
     "square.2x2x2m6",
     "square.3x3x3m23",
@@ -109,7 +110,7 @@ void Simulator::run(const String &envPath) {
 void Simulator::debug() {
     Task task;
     task.instSet = "";
-    task.instId = "dsjc.n500e62624c49";
+    task.instId = "square.2x2x2m8";
     //task.randSeed = "1500972793";
     task.randSeed = to_string(Random::generateSeed());
     task.timeout = "1800";
