@@ -1,11 +1,11 @@
 # 目录组织
 
 - **Solver/**
-  图着色问题的 Visual C++ 项目.
+  矩阵乘法优化问题的 Visual C++ 项目.
   核心算法.
 
 - **Protocol/**
-  - GraphColoring.proto
+  - MatrixMultiplication.proto
     图着色问题的输入输出数据定义文件.
 
 - **Simulator/**
@@ -13,10 +13,10 @@
   实现批量测试与结果展示等功能.
 
 - **Checker/**
-  图着色问题计算结果检查程序的 Visual C++ 项目.
+  矩阵乘法优化问题计算结果检查程序的 Visual C++ 项目.
 
 - **Analyzer/**
-  图着色问题算例/结果/日志分析程序的 Visual C# 项目.
+  矩阵乘法优化问题算例/结果/日志分析程序的 Visual C# 项目.
 
 - **Deploy/**
   开发阶段程序部署目录, 包含程序运行所需要的所有可执行文件和数据.
@@ -30,7 +30,7 @@
 - **Doc/**
   项目文档.
   - **ProblemDescription.md**
-    图着色问题描述文档.
+    矩阵乘法优化问题描述文档.
 
 - **Lib/**
   第三方库.
@@ -60,12 +60,4 @@
 1. 自己编译 protobuf 或者在 [NPBenchmark](https://github.com/HUST-Smart/NPBenchmark/releases/tag/v1.0) 或群共享下载 `protobuf3.6.1_vs2017_MT+MTd_x64.zip` 并解压至 `Lib` 目录.
 2. 运行 `Protocol/` 目录下的 `generate.bat` (未更改 `*.proto` 文件可跳过该步骤).
 3. 安装 gurobi 并在 [NPBenchmark](https://github.com/HUST-Smart/NPBenchmark/releases/tag/v1.0) 或群共享下载 `gurobi8.1.1_vs2017_MT+MTd+MD+MDd_x64.zip` 并解压至 `Lib` 目录. (不使用求解器可跳过该步骤)
-4. 打开根目录下的 Visual Studio 2017 解决方案文件 `IncrementalGraphDrawing.sln`, 设置输出选项为 Release x64, 生成解决方案.
-
-
-
-# 参考资料
-
-- 截至 2018 年最优结果
-  - Variations on memetic algorithms for graph coloring problems
-  - https://github.com/graphcoloring/HEAD
+4. 打开根目录下的 Visual Studio 2017 解决方案文件 `MatrixMultiplication.sln`, 设置输出选项为 Release x64, 生成解决方案.

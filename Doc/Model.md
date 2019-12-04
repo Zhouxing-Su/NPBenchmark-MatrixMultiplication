@@ -379,8 +379,11 @@ $$
 - Try greater $u$.
 - Try to minimize the number of addition operations.
 - Try to use relax-and-fix method.
-  - first determine each term is involved or not, then decide their coefficients.
+  - First determine each term is involved or not, then decide their coefficients.
 - Try wider domains for the parameters.
-  - especially power of two, e.g., $..., \pm 4, \pm 2, \pm 0.5, \pm 0.25, ...$
+  - Especially power of two, e.g., $..., \pm 4, \pm 2, \pm 0.5, \pm 0.25, ...$
 - Try to let the calculation of the intermediates can utilize other intermediates.
   - There must not be cyclic references.
+- Try to add symmetry breaking constraints.
+  - By swapping the occurrences and the definitions of a pair of intermediate matrices $M_{v}$ and $M_{v'}$, a homogenous solution is found.
+    - For each pair of $v, v' \in [1, u]$, do the value swap as $r^{v}_{ij} \leftrightarrow r^{v'}_{ij}, p^{v}_{ij} \leftrightarrow p^{v'}_{ij}, q^{v}_{ij} \leftrightarrow q^{v'}_{ij}, \forall i, j, k \in [1, m]$.

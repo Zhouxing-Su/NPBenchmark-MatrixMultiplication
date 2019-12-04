@@ -282,6 +282,8 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     using Dvar = MpSolver::DecisionVar;
     using Expr = MpSolver::LinearExpr;
 
+    bool shouldRelax = true;
+
     int rowNum = input.rownuma();
     int colNum = input.colnumb();
     int numRC = input.numrcab();
@@ -304,6 +306,7 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> z(mulNum);
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> xPos(mulNum);
     Arr<Arr2D<Arr2D<Arr2D<Dvar>>>> xNeg(mulNum);
+    Arr2D<Arr2D<Arr2D<Dvar>>> slacks(rowNum, rowNum);
     for (ID v = 0; v < mulNum; ++v) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID j = 0; j < colNum; ++j) {
@@ -355,6 +358,23 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
                                 z[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
                                 xPos[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
                                 xNeg[v][i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (shouldRelax) {
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID ii = 0; ii < rowNum; ++ii) {
+                slacks[i][ii].init(colNum, colNum);
+                for (ID j = 0; j < colNum; ++j) {
+                    for (ID jj = 0; jj < colNum; ++jj) {
+                        slacks[i][ii][j][jj].init(numRC, numRC);
+                        for (ID k = 0; k < numRC; ++k) {
+                            for (ID kk = 0; kk < numRC; ++kk) {
+                                slacks[i][ii][j][jj][k][kk] = mp.addVar(MpSolver::VariableType::Real, 0, mulNum, 1);
                             }
                         }
                     }
@@ -429,7 +449,12 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
                                 sum -= xNeg[v][i][ii][j][jj][k][kk];
                             }
                             bool termExists = ((i == ii) && (j == jj) && (k == kk));
-                            mp.addConstraint(sum == termExists);
+                            if (shouldRelax) {
+                                mp.addConstraint(sum >= termExists - slacks[i][ii][j][jj][k][kk]);
+                                mp.addConstraint(sum <= termExists + slacks[i][ii][j][jj][k][kk]);
+                            } else {
+                                mp.addConstraint(sum == termExists);
+                            }
                         }
                     }
                 }
@@ -440,7 +465,7 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
     // solve model.
     mp.setOutput(true);
     //mp.setMaxThread(1);
-    mp.setTimeLimitInSecond(1800);
+    //mp.setTimeLimitInSecond(1800);
     //mp.setMipFocus(MpSolver::MipFocusMode::ImproveFeasibleSolution);
 
     // record decision.
