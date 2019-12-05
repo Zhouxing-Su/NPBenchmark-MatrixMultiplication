@@ -384,6 +384,21 @@ $$
   - Especially power of two, e.g., $..., \pm 4, \pm 2, \pm 0.5, \pm 0.25, ...$
 - Try to let the calculation of the intermediates can utilize other intermediates.
   - There must not be cyclic references.
-- Try to add symmetry breaking constraints.
+- Try to break the symmetry among different solutions.
   - By swapping the occurrences and the definitions of a pair of intermediate matrices $M_{v}$ and $M_{v'}$, a homogenous solution is found.
     - For each pair of $v, v' \in [1, u]$, do the value swap as $r^{v}_{ij} \leftrightarrow r^{v'}_{ij}, p^{v}_{ij} \leftrightarrow p^{v'}_{ij}, q^{v}_{ij} \leftrightarrow q^{v'}_{ij}, \forall i, j, k \in [1, m]$.
+- Try to use the symmetry within single solution.
+  - There is a corresponding index pattern $(\boldsymbol{a}_{ij} + ... +\boldsymbol{a}_{i'j'})$ if there is a index pattern $(\boldsymbol{b}_{ij} + ... + \boldsymbol{b}_{i'j'})$ in Strassen's construction.
+    - This assumption does not hold in 3x3 case.
+- Try column generation.
+  - Let $d$ be the size of the domain, e.g., $d = 3$ if $p^{v}_{ij}, q^{v}_{ij}, r^{v}_{ij} \in \{-1, 0, 1\}, \forall v \in [1, u], \forall i, j \in [1, m]$.
+  - Naive complexity.
+    - The combination of $\boldsymbol{p}$ produces $d^{m^{2}} - 1$ columns.
+    - The combination of $\boldsymbol{q}$ produces $d^{m^{2}} - 1$ columns.
+    - The combination of $\boldsymbol{r}$ produces $d^{u} - 1$ columns.
+  - Empirical complexity.
+    - 3x3 case.
+      - Assume each sum in each intermediate matrix consists of up to 8 terms.
+        - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{m^{2}})$ columns for $\boldsymbol{p}$ and $\boldsymbol{q}$, respectively.
+      - Assume each resulting sub-matrix contains up to 8 intermediate matrices.
+        - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{u})$ columns for $\boldsymbol{r}$.
