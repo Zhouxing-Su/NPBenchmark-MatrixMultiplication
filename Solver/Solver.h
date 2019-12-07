@@ -174,6 +174,12 @@ public:
     struct Solution : public Problem::Output { // cutting patterns.
         Solution(Solver *pSolver = nullptr) : solver(pSolver) {}
 
+        static void addTerm(pb::MatrixMultiplication_LinearExpression &expr, ID id, double coef) {
+            auto &term(*expr.add_terms());
+            term.set_id(id);
+            term.set_coef(coef);
+        }
+
         Solver *solver;
     };
     #pragma endregion Type
@@ -199,7 +205,8 @@ protected:
     void init();
     bool optimize(Solution &sln, ID workerId = 0); // optimize by a single worker.
 
-    bool optimizeBoolDecisionModel(Solution &sln);
+    bool optimizePlainModel(Solution &sln);
+    bool optimizePatternPickingModel(Solution &sln);
     bool optimizeLocalSearch(Solution &sln);
     bool optimizeTabuSearch(Solution &sln);
     #pragma endregion Method

@@ -56,79 +56,26 @@ $$
 The original calculation process of each submatrix $\boldsymbol{c}_{ij}$ is as follows.
 
 $$
-\boldsymbol{c}_{ij} = \sum^{m}_{k=1} \boldsymbol{a}_{ik} \cdot \boldsymbol{b}_{kj}, \quad \forall i, j \in [1, m]
+\boldsymbol{c}_{ij} = \sum^{m}_{k=1} \boldsymbol{a}_{ik} \boldsymbol{b}_{kj}, \quad \forall i, j \in [1, m]
 \label{c_origin_calc}
-$$
-
-Considering the trace of the product of three matrices $\boldsymbol{A} \boldsymbol{B} \boldsymbol{C}$ where $\boldsymbol{A}$ is $\alpha \times \beta$, $\boldsymbol{B}$ is $\beta \times \gamma$, and $\boldsymbol{C}$ is $\gamma \times \alpha$.
-
-$$
-\begin{align}
-\text{Tr}(\boldsymbol{A} \boldsymbol{B} \boldsymbol{C}) & = \text{Tr}\left(
-\begin{bmatrix}
-  a_{11} & a_{12} & \cdots & a_{1 \beta} \\
-  a_{21} & a_{22} & \cdots & a_{2 \beta} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  a_{\alpha 1} & a_{\alpha 2} & \cdots & a_{\alpha \beta} 
-\end{bmatrix}
-\begin{bmatrix}
-  b_{11} & b_{12} & \cdots & b_{1 \gamma} \\
-  b_{21} & b_{22} & \cdots & b_{2 \gamma} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  b_{\beta 1} & b_{\beta 2} & \cdots & b_{\beta \gamma} 
-\end{bmatrix}
-\begin{bmatrix}
-  c_{11} & c_{12} & \cdots & c_{1 \alpha} \\
-  c_{21} & c_{22} & \cdots & c_{2 \alpha} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  c_{\gamma 1} & c_{\gamma 2} & \cdots & c_{\gamma \alpha} 
-\end{bmatrix}
-\right)
-\\
-& = \text{Tr}\left(
-\begin{bmatrix}
-  \sum\limits^{\beta}_{j=1} a_{1j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{1j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{1j} b_{j \gamma} \\
-  \sum\limits^{\beta}_{j=1} a_{2j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{2j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{2j} b_{j \gamma} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j \gamma} 
-\end{bmatrix}
-\begin{bmatrix}
-  c_{11} & c_{12} & \cdots & c_{1 \alpha} \\
-  c_{21} & c_{22} & \cdots & c_{2 \alpha} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  c_{\gamma 1} & c_{\gamma 2} & \cdots & c_{\gamma \alpha} 
-\end{bmatrix}
-\right)
-\\
-& = \text{Tr}\left(
-\begin{bmatrix}
-  \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{1j} b_{jk} c_{k1} & \cdots & \cdots & \cdots \\
-  \vdots & \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{2j} b_{jk} c_{k2} & \cdots & \cdots \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  \vdots & \vdots & \cdots & \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{\alpha j} b_{jk} c_{k \alpha} 
-\end{bmatrix}
-\right)
-\\
-& = \sum^{\alpha}_{i=1} \sum^{\beta}_{j=1} \sum^{\gamma}_{k=1} a_{ij} b_{jk} c_{ki}
-\end{align}
 $$
 
 
 ## Constructing Intermediates
 
 We construct $u$ intermediates $\boldsymbol{M}_{v}, \forall 1 \le v \le u$, each of which is in the product-of-sum form and contains only single multiplication.
-Let $p^{v}_{ij}, q^{v}_{ij} \in R, \forall v \in [1, u], \forall i, j \in [1, m]$ be proper constant scalar parameters to determine.
+Let $p^{v}_{ij}, q^{v}_{ij} \in R, \forall v \in [1, u], \forall i, j \in [1, m]$ be proper constant scalar parameters to determine, indicating the coefficients of $\boldsymbol{a}_{ij}, \boldsymbol{b}_{ij}$ in the linear expressions for calculating $\boldsymbol{M}_{v}$, respectively.
 As long as $u < m^{3}$ is true, there will be less multiplications.
 
 $$
-\boldsymbol{M}_{v} = \left( \sum^{m}_{i=1} \sum^{m}_{j=1} p^{v}_{ij} \boldsymbol{a}_{ij} \right) \cdot \left( \sum^{m}_{i=1} \sum^{m}_{j=1} q^{v}_{ij} \boldsymbol{b}_{ij} \right), \quad \forall v \in [1, u]
+\boldsymbol{M}_{v} = \left( \sum^{m}_{i=1} \sum^{m}_{j=1} p^{v}_{ij} \boldsymbol{a}_{ij} \right) \left( \sum^{m}_{i=1} \sum^{m}_{j=1} q^{v}_{ij} \boldsymbol{b}_{ij} \right), \quad \forall v \in [1, u]
 $$
 
 
 ## Reformulating Expressions
 
 We calculate each submatrix $\boldsymbol{c}_{ij}$ by adding the intermediates only.
-Let $r^{v}_{ij} \in R, \forall v \in [1, u], \forall i, j \in [1, m]$ be proper constant scalar parameters to determine.
+Let $r^{v}_{ij} \in R, \forall v \in [1, u], \forall i, j \in [1, m]$ be proper constant scalar parameters to determine, indicating the coefficient of intermediate matrix $v$ in the linear expression for calculating $\boldsymbol{c}_{ij}$.
 
 $$
 \boldsymbol{c}_{ij} = \sum^{u}_{v=1} r^{v}_{ij} \boldsymbol{M}_{v}, \quad \forall i, j \in [1, m]
@@ -141,10 +88,10 @@ $$
 In order to determine the proper constant scalar parameters $p^{v}_{ij}, q^{v}_{ij}, r^{v}_{ij} \in R, \forall v \in [1, u], \forall i, j \in [1, m]$, we combine Equations $(\ref{c_origin_calc})$ and $(\ref{c_new_calc})$.
 
 $$
-\sum^{m}_{k=1} \boldsymbol{a}_{ik} \cdot \boldsymbol{b}_{kj} = \sum^{u}_{v=1} r^{v}_{ij} \boldsymbol{M}_{v}, \quad \forall i, j \in [1, m]
+\sum^{m}_{k=1} \boldsymbol{a}_{ik} \boldsymbol{b}_{kj} = \sum^{u}_{v=1} r^{v}_{ij} \boldsymbol{M}_{v}, \quad \forall i, j \in [1, m]
 $$
 
-For each term $\boldsymbol{a}_{ik} \cdot \boldsymbol{b}_{kj}$ on the left-hand side, there are corresponding ones $r^{v}_{ij} p^{v}_{ik} q^{v}_{kj} \boldsymbol{a}_{ik} \cdot \boldsymbol{b}_{kj}, \forall v \in [1, u]$ on the right-hand side. Apparently, their coefficients must be equal.
+For each term $\boldsymbol{a}_{ik} \boldsymbol{b}_{kj}$ on the left-hand side, there are corresponding ones $r^{v}_{ij} p^{v}_{ik} q^{v}_{kj} \boldsymbol{a}_{ik} \boldsymbol{b}_{kj}, \forall v \in [1, u]$ on the right-hand side. Apparently, their coefficients must be equal.
 
 $$
 \sum^{u}_{v=1} r^{v}_{ij} p^{v}_{ik} q^{v}_{kj} = 1, \quad \forall i, j, k \in [1, m]
@@ -268,7 +215,19 @@ $$
 2 x^{v+}_{ii'jj'kk'} \le z^{v}_{ii'jj'kk'} + (1 - o^{v}_{ii'jj'kk'}) \le 1 + x^{v+}_{ii'jj'kk'}, \quad \forall v \in [1, u], \forall i, i', j, j', k, k' \in [1, m]
 $$
 
-### Complete Model
+### Cuts
+
+There should be at least one negative term.
+
+$$
+\begin{align}
+\sum^{u}_{v=1} \sum^{m}_{i=1} \sum^{m}_{j=1} r^{v-}_{ij} \ge 1\\
+\sum^{u}_{v=1} \sum^{m}_{i=1} \sum^{m}_{k=1} p^{v-}_{ik} \ge 1\\
+\sum^{u}_{v=1} \sum^{m}_{k=1} \sum^{m}_{j=1} q^{v-}_{kj} \ge 1
+\end{align}
+$$
+
+### Complete Plain Model
 
 | Variable              | Description                               | Remark |
 | --------------------- | ----------------------------------------- | ------ |
@@ -324,6 +283,68 @@ $$
 $$
 \sum^{u}_{v=1} x^{v+}_{ii'jj'kk'} - \sum^{u}_{v=1} x^{v-}_{ii'jj'kk'} = 0, \quad \forall i, i', j, j', k, k' \in [1, m], (i \ne i') \vee (j \ne j') \vee (k \ne k')
 $$
+
+### Linear Pattern Picking Model
+
+Instead of determine the pattern of $u$ intermediate matrices, we are going to select $u$ intermediate matrices from a pool of $w$ distinct patterns.
+In this way, $p^{v}_{ik}, q^{v}_{kj}$ become constants instead of decision variables, and we can regard $r^{v}_{ij}$ as continuous variables whose domains are $[\alpha, \beta]$.
+A candidate pattern $v$ is selected if its coefficient is non-zero in any one of the linear expressions for calculating $\boldsymbol{c}_{ij}$.
+Let $r^{v} \in \{0, 1\}, \forall v \in [1, w]$ indicate whether intermediate matrix $v$ is used somewhere.
+
+$$
+\min \sum^{w}_{v=1} r^{v}
+\label{min_m_num}
+$$
+
+$$
+\sum^{w}_{v=1} r^{v} \le u
+\label{m_num_ub}
+$$
+
+$$
+\alpha r^{v} \le r^{v}_{ij} \le \beta r^{v}, \quad \forall v \in [1, w], \forall i, j \in [1, m]
+$$
+
+$$
+\sum^{w}_{v=1} p^{v}_{i'k} q^{v}_{k'j'} r^{v}_{ij} = \delta_{ii'} \delta_{jj'} \delta_{kk'}, \quad \forall i, i', j, j', k, k' \in [1, m]
+$$
+
+Note that the model is complete if it includes either one of Equations $(\ref{min_m_num})$ and $(\ref{m_num_ub})$.
+
+### Quadratic Pattern Picking Model
+
+Another alternative is to select $m^{2}$ patterns from a pool of $\mu$ linear expressions composed of intermediate matrices.
+In other words, $r^{v}_{ij}$ become constants but $p^{v}_{ik}, q^{v}_{kj}$ are still variables.
+
+However, there is a huge problem that the number of columns are too big.
+Let $d$ be the size of the domain, e.g., $d = 3$ if $r^{v}_{ij}, p^{v}_{ik}, q^{v}_{kj} \in \{-1, 0, 1\}, \forall v \in [1, u], \forall i, j, k \in [1, m]$.
+
+- Naive complexity.
+  - The combination of $\boldsymbol{p}$ produces $d^{m^{2}} - 1$ columns.
+  - The combination of $\boldsymbol{q}$ produces $d^{m^{2}} - 1$ columns.
+  - The combination of $\boldsymbol{r}$ produces $d^{u} - 1$ columns.
+- Empirical complexity.
+  - 3x3 case.
+    - Assume each sum in each intermediate matrix consists of up to 8 terms.
+      - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{m^{2}})$ columns for $\boldsymbol{p}$ and $\boldsymbol{q}$, respectively.
+    - Assume each resulting sub-matrix contains up to 8 intermediate matrices.
+      - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{u})$ columns for $\boldsymbol{r}$.
+
+The distribution of the column number by term number is as follows.
+
+|        | 1    | 2    | 3     | 4      | 5       | 6       | 7        | 8         | 9         |
+| ------ | ---- | ---- | ----- | ------ | ------- | ------- | -------- | --------- | --------- |
+| $p, q$ | 18   | 144  | 672   | 2016   | 4032    | 5376    | 4608     | 2304      | 512       |
+| $r$    | 46   | 1012 | 14168 | 141680 | 1076768 | 6460608 | 31380096 | 125520384 | 418401280 |
+
+So, how to skip useless patterns so that the pool size will not blow up?
+Or, can we iteratively identify useful columns and lazily add them to the model?
+
+Maybe we could focus on the symmetric patterns?
+Even if this is a promising direction, how do we define symmetric patterns?
+
+Column generation?
+The LP relaxation of the master problem could be extremely poor.
 
 
 ## CNF Encoding
@@ -386,19 +407,104 @@ $$
   - There must not be cyclic references.
 - Try to break the symmetry among different solutions.
   - By swapping the occurrences and the definitions of a pair of intermediate matrices $M_{v}$ and $M_{v'}$, a homogenous solution is found.
-    - For each pair of $v, v' \in [1, u]$, do the value swap as $r^{v}_{ij} \leftrightarrow r^{v'}_{ij}, p^{v}_{ij} \leftrightarrow p^{v'}_{ij}, q^{v}_{ij} \leftrightarrow q^{v'}_{ij}, \forall i, j, k \in [1, m]$.
+    - For each pair of $v, v' \in [1, u]$, do the value swap as $r^{v}_{ij} \leftrightarrow r^{v'}_{ij}, p^{v}_{ik} \leftrightarrow p^{v'}_{ik}, q^{v}_{kj} \leftrightarrow q^{v'}_{kj}, \forall i, j, k \in [1, m]$.
+  - By performing additive inverse to the occurrences and the definitions of a intermediate matrix, a homogenous solution is found.
+    - For each $v \in [1, u]$, reverse the signs as $r^{v}_{ij} \leftarrow -r^{v}_{ij}, p^{v}_{ik} \leftarrow -p^{v}_{ik}, q^{v}_{kj} \leftarrow -q^{v}_{kj}, \forall i, j, k \in [1, m]$.
 - Try to use the symmetry within single solution.
   - There is a corresponding index pattern $(\boldsymbol{a}_{ij} + ... +\boldsymbol{a}_{i'j'})$ if there is a index pattern $(\boldsymbol{b}_{ij} + ... + \boldsymbol{b}_{i'j'})$ in Strassen's construction.
     - This assumption does not hold in 3x3 case.
-- Try column generation.
-  - Let $d$ be the size of the domain, e.g., $d = 3$ if $p^{v}_{ij}, q^{v}_{ij}, r^{v}_{ij} \in \{-1, 0, 1\}, \forall v \in [1, u], \forall i, j \in [1, m]$.
-  - Naive complexity.
-    - The combination of $\boldsymbol{p}$ produces $d^{m^{2}} - 1$ columns.
-    - The combination of $\boldsymbol{q}$ produces $d^{m^{2}} - 1$ columns.
-    - The combination of $\boldsymbol{r}$ produces $d^{u} - 1$ columns.
-  - Empirical complexity.
-    - 3x3 case.
-      - Assume each sum in each intermediate matrix consists of up to 8 terms.
-        - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{m^{2}})$ columns for $\boldsymbol{p}$ and $\boldsymbol{q}$, respectively.
-      - Assume each resulting sub-matrix contains up to 8 intermediate matrices.
-        - $\sum^{8}_{k=1} ((d - 1)^{k} C^{k}_{u})$ columns for $\boldsymbol{r}$.
+
+
+
+# Unused Materials
+
+## Another Perspective
+
+Let us review the $\boldsymbol{r}, \boldsymbol{p}$, $\boldsymbol{q}$ in matrix forms.
+
+$$
+\boldsymbol{r}^{v} =
+\begin{bmatrix}
+  r^{v}_{11} & r^{v}_{12} & \cdots & r^{v}_{1m} \\
+  r^{v}_{21} & r^{v}_{22} & \cdots & r^{v}_{2m} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  r^{v}_{m1} & r^{v}_{m2} & \cdots & r^{v}_{mm} 
+\end{bmatrix}
+\quad
+\boldsymbol{p}^{v} =
+\begin{bmatrix}
+  p^{v}_{11} & p^{v}_{12} & \cdots & p^{v}_{1m} \\
+  p^{v}_{21} & p^{v}_{22} & \cdots & p^{v}_{2m} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  p^{v}_{m1} & p^{v}_{m2} & \cdots & p^{v}_{mm} 
+\end{bmatrix}
+\quad
+\boldsymbol{q}^{v} =
+\begin{bmatrix}
+  q^{v}_{11} & q^{v}_{12} & \cdots & q^{v}_{1m} \\
+  q^{v}_{21} & q^{v}_{22} & \cdots & q^{v}_{2m} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  q^{v}_{m1} & q^{v}_{m2} & \cdots & q^{v}_{mm} 
+\end{bmatrix}
+$$
+
+Then, we can rewrite $\boldsymbol{M}_{v}$ in a simpler way.
+
+$$
+\boldsymbol{M}_{v} = \text{Tr}\left( \boldsymbol{p}^{v} \boldsymbol{A}^{T} \right) \text{Tr}\left( \boldsymbol{q}^{v} \boldsymbol{B}^{T} \right)
+$$
+
+## Trace
+
+Considering the trace of the product of three matrices $\boldsymbol{A} \boldsymbol{B} \boldsymbol{C}$ where $\boldsymbol{A}$ is $\alpha \times \beta$, $\boldsymbol{B}$ is $\beta \times \gamma$, and $\boldsymbol{C}$ is $\gamma \times \alpha$.
+
+$$
+\begin{align}
+\text{Tr}(\boldsymbol{A} \boldsymbol{B} \boldsymbol{C}) & = \text{Tr}\left(
+\begin{bmatrix}
+  a_{11} & a_{12} & \cdots & a_{1 \beta} \\
+  a_{21} & a_{22} & \cdots & a_{2 \beta} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  a_{\alpha 1} & a_{\alpha 2} & \cdots & a_{\alpha \beta} 
+\end{bmatrix}
+\begin{bmatrix}
+  b_{11} & b_{12} & \cdots & b_{1 \gamma} \\
+  b_{21} & b_{22} & \cdots & b_{2 \gamma} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  b_{\beta 1} & b_{\beta 2} & \cdots & b_{\beta \gamma} 
+\end{bmatrix}
+\begin{bmatrix}
+  c_{11} & c_{12} & \cdots & c_{1 \alpha} \\
+  c_{21} & c_{22} & \cdots & c_{2 \alpha} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  c_{\gamma 1} & c_{\gamma 2} & \cdots & c_{\gamma \alpha} 
+\end{bmatrix}
+\right)
+\\
+& = \text{Tr}\left(
+\begin{bmatrix}
+  \sum\limits^{\beta}_{j=1} a_{1j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{1j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{1j} b_{j \gamma} \\
+  \sum\limits^{\beta}_{j=1} a_{2j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{2j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{2j} b_{j \gamma} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j1} & \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j2} & \cdots & \sum\limits^{\beta}_{j=1} a_{\alpha j} b_{j \gamma} 
+\end{bmatrix}
+\begin{bmatrix}
+  c_{11} & c_{12} & \cdots & c_{1 \alpha} \\
+  c_{21} & c_{22} & \cdots & c_{2 \alpha} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  c_{\gamma 1} & c_{\gamma 2} & \cdots & c_{\gamma \alpha} 
+\end{bmatrix}
+\right)
+\\
+& = \text{Tr}\left(
+\begin{bmatrix}
+  \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{1j} b_{jk} c_{k1} & \cdots & \cdots & \cdots \\
+  \vdots & \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{2j} b_{jk} c_{k2} & \cdots & \cdots \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  \vdots & \vdots & \cdots & \sum\limits^{\beta}_{j=1} \sum\limits^{\gamma}_{k=1} a_{\alpha j} b_{jk} c_{k \alpha} 
+\end{bmatrix}
+\right)
+\\
+& = \sum^{\alpha}_{i=1} \sum^{\beta}_{j=1} \sum^{\gamma}_{k=1} a_{ij} b_{jk} c_{ki}
+\end{align}
+$$

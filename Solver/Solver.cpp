@@ -7,6 +7,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <array>
 
 #include <cmath>
 
@@ -266,8 +267,8 @@ bool Solver::optimize(Solution &sln, ID workerId) {
     // reset solution state.
     bool status = false;
 
-    status = optimizeBoolDecisionModel(sln);
-    //status = optimizeRelaxedBoolDecisionModel(sln);
+    //status = optimizePlainModel(sln);
+    status = optimizePatternPickingModel(sln);
     //status = optimizeIntegerDecisionModel(sln);
     //status = optimizeLocalSearch(sln);
     //status = optimizeTabuSearch(sln);
@@ -278,19 +279,20 @@ bool Solver::optimize(Solution &sln, ID workerId) {
     return status;
 }
 
-bool Solver::optimizeBoolDecisionModel(Solution &sln) {
+bool Solver::optimizePlainModel(Solution &sln) {
     using Dvar = MpSolver::DecisionVar;
     using Expr = MpSolver::LinearExpr;
 
-    bool shouldRelax = true;
+    constexpr bool ShouldRelax = true;
+    constexpr bool ShouldAddAtLeastOneNegativeTermCut = false;
 
-    int rowNum = input.rownuma();
-    int colNum = input.colnumb();
-    int numRC = input.numrcab();
-    int mulNum = input.refmultiplicationnum(); // number of intermediate matrices and the number of multiplication.
-    auto getRow = [&](int id) { return id / colNum; };
-    auto getCol = [&](int id) { return id % colNum; };
-    auto getId = [&](int row, int col) { return (row * colNum) + col; };
+    ID rowNum = input.rownuma();
+    ID colNum = input.colnumb();
+    ID numRC = input.numrcab();
+    ID mulNum = input.refmultiplicationnum(); // number of intermediate matrices and the number of multiplication.
+    auto getRow = [&](ID id) { return id / colNum; };
+    auto getCol = [&](ID id) { return id % colNum; };
+    auto getId = [&](ID row, ID col) { return (row * colNum) + col; };
     
     MpSolver mp;
 
@@ -365,7 +367,7 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
             }
         }
     }
-    if (shouldRelax) {
+    if (ShouldRelax) {
         for (ID i = 0; i < rowNum; ++i) {
             for (ID ii = 0; ii < rowNum; ++ii) {
                 slacks[i][ii].init(colNum, colNum);
@@ -449,7 +451,7 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
                                 sum -= xNeg[v][i][ii][j][jj][k][kk];
                             }
                             bool termExists = ((i == ii) && (j == jj) && (k == kk));
-                            if (shouldRelax) {
+                            if (ShouldRelax) {
                                 mp.addConstraint(sum >= termExists - slacks[i][ii][j][jj][k][kk]);
                                 mp.addConstraint(sum <= termExists + slacks[i][ii][j][jj][k][kk]);
                             } else {
@@ -462,10 +464,104 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
         }
     }
 
+    #if SZX_VERIFY_2X2_MODEL
+    double p[7][2][2] = {
+        {{  1,  0 },
+         {  0,  1 }},
+        {{  0,  0 },
+         {  1,  1 }},
+        {{  1,  0 },
+         {  0,  0 }},
+        {{  0,  0 },
+         {  0,  1 }},
+        {{  1,  1 },
+         {  0,  0 }},
+        {{ -1,  0 },
+         {  1,  0 }},
+        {{  0,  1 },
+         {  0, -1 }},
+    };
+    double q[7][2][2] = {
+        {{  1,  0 },
+         {  0,  1 }},
+        {{  1,  0 },
+         {  0,  0 }},
+        {{  0,  1 },
+         {  0, -1 }},
+        {{ -1,  0 },
+         {  1,  0 }},
+        {{  0,  0 },
+         {  0,  1 }},
+        {{  1,  1 },
+         {  0,  0 }},
+        {{  0,  0 },
+         {  1,  1 }},
+    };
+    double r[7][2][2] = {
+        {{  1,  0 },
+         {  0,  1 }},
+        {{  0,  0 },
+         {  1, -1 }},
+        {{  0,  1 },
+         {  0,  1 }},
+        {{  1,  0 },
+         {  1,  0 }},
+        {{ -1,  1 },
+         {  0,  0 }},
+        {{  0,  0 },
+         {  0,  1 }},
+        {{  1,  0 },
+         {  0,  0 }},
+    };
+    for (ID v = 0; v < mulNum; ++v) {
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) {
+                mp.addConstraint(pPos[v][i][j] == ((p[v][i][j] > 0) ? 1 : 0));
+                mp.addConstraint(pNeg[v][i][j] == ((p[v][i][j] < 0) ? 1 : 0));
+                mp.addConstraint(qPos[v][i][j] == ((q[v][i][j] > 0) ? 1 : 0));
+                mp.addConstraint(qNeg[v][i][j] == ((q[v][i][j] < 0) ? 1 : 0));
+                mp.addConstraint(rPos[v][i][j] == ((r[v][i][j] > 0) ? 1 : 0));
+                mp.addConstraint(rNeg[v][i][j] == ((r[v][i][j] < 0) ? 1 : 0));
+            }
+        }
+    }
+    #endif
+
+    // at-least-one-negative-term cut.
+    if (ShouldAddAtLeastOneNegativeTermCut) {
+        Expr sum;
+        for (ID v = 0; v < mulNum; ++v) {
+            for (ID i = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < colNum; ++j) {
+                    sum += rNeg[v][i][j];
+                }
+            }
+        }
+        mp.addConstraint(sum >= 1);
+        sum = 0;
+        for (ID v = 0; v < mulNum; ++v) {
+            for (ID i = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < numRC; ++j) {
+                    sum += pNeg[v][i][j];
+                }
+            }
+        }
+        mp.addConstraint(sum >= 1);
+        sum = 0;
+        for (ID v = 0; v < mulNum; ++v) {
+            for (ID i = 0; i < numRC; ++i) {
+                for (ID j = 0; j < colNum; ++j) {
+                    sum += qNeg[v][i][j];
+                }
+            }
+        }
+        mp.addConstraint(sum >= 1);
+    }
+
     // solve model.
     mp.setOutput(true);
     //mp.setMaxThread(1);
-    //mp.setTimeLimitInSecond(1800);
+    mp.setTimeLimitInSecond(3600);
     //mp.setMipFocus(MpSolver::MipFocusMode::ImproveFeasibleSolution);
 
     // record decision.
@@ -482,45 +578,227 @@ bool Solver::optimizeBoolDecisionModel(Solution &sln) {
         }
 
         // retrieve values.
-        auto addTerm = [&](pb::MatrixMultiplication_LinearExpression &expr, ID id, double coef) {
-            auto &term(*expr.add_terms());
-            term.set_id(id);
-            term.set_coef(coef);
-        };
         for (ID v = 0; v < mulNum; ++v) {
             for (ID i = 0, id = 0; i < rowNum; ++i) {
                 for (ID j = 0; j < colNum; ++j, ++id) {
                     if (mp.isTrue(rPos[v][i][j])) {
-                        addTerm(exprs[id], v, 1);
+                        Solution::addTerm(exprs[id], v, 1);
                     } else if (mp.isTrue(rNeg[v][i][j])) {
-                        addTerm(exprs[id], v, -1);
+                        Solution::addTerm(exprs[id], v, -1);
                     } // else (r == 0).
                 }
             }
-        }
-        for (ID v = 0; v < mulNum; ++v) {
-            auto &expr(*intermediates[v].mutable_suma());
+            auto &aExpr(*intermediates[v].mutable_suma());
             for (ID i = 0, id = 0; i < rowNum; ++i) {
                 for (ID j = 0; j < numRC; ++j, ++id) {
                     if (mp.isTrue(pPos[v][i][j])) {
-                        addTerm(expr, id, 1);
+                        Solution::addTerm(aExpr, id, 1);
                     } else if (mp.isTrue(pNeg[v][i][j])) {
-                        addTerm(expr, id, -1);
+                        Solution::addTerm(aExpr, id, -1);
                     } // else (p == 0).
                 }
             }
-        }
-        for (ID v = 0; v < mulNum; ++v) {
-            auto &expr(*intermediates[v].mutable_sumb());
+            auto &bExpr(*intermediates[v].mutable_sumb());
             for (ID i = 0, id = 0; i < numRC; ++i) {
                 for (ID j = 0; j < colNum; ++j, ++id) {
                     if (mp.isTrue(qPos[v][i][j])) {
-                        addTerm(expr, id, 1);
+                        Solution::addTerm(bExpr, id, 1);
                     } else if (mp.isTrue(qNeg[v][i][j])) {
-                        addTerm(expr, id, -1);
+                        Solution::addTerm(bExpr, id, -1);
                     } // else (q == 0).
                 }
             }
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool Solver::optimizePatternPickingModel(Solution &sln) {
+    using Dvar = MpSolver::DecisionVar;
+    using Expr = MpSolver::LinearExpr;
+
+    constexpr bool AddIntermediateMatrixNumCut = false;
+    constexpr double MinR = -1;
+    constexpr double MaxR = 1;
+    constexpr ID DomainSizePQ = 3;
+    constexpr array<float, DomainSizePQ> DomainPQ = { 0, 1, -1 };
+
+    ID rowNum = input.rownuma();
+    ID colNum = input.colnumb();
+    ID numRC = input.numrcab();
+    ID mulNum = input.refmultiplicationnum(); // number of intermediate matrices and the number of multiplication.
+
+    // generate pool.
+    if ((rowNum != numRC) || (numRC != colNum)) { Log(LogSwitch::Szx::Preprocess) << "[Error] square matrices only." << endl; return false; }
+
+    ID abPatternDepth = rowNum * numRC;
+    // EXTEND[szx][5]: in order to support rect matrices, distinct pools for a and b should be used.
+    if (rowNum >= 5) { Log(LogSwitch::Szx::Preprocess) << "[Error] abPoolSize overflow." << endl; return false; }
+    ID abPoolSize = static_cast<ID>(pow(DomainPQ.size(), abPatternDepth) - 1);
+    List<Arr2D<float>> abPool;
+    abPool.reserve(abPoolSize);
+
+    Arr2D<float> abPattern(rowNum, numRC);
+    abPattern.reset();
+
+    struct StackItem {
+        ID domain;
+    };
+    List<StackItem> enumStack(abPatternDepth, { 1 }); // skip the all-zero pattern.
+    for (ID id = 3; !enumStack.empty();) {
+        StackItem &si(enumStack.back());
+        if (si.domain >= DomainSizePQ) { // backtrack.
+            enumStack.pop_back();
+            --id;
+        } else {
+            abPattern.at(id) = DomainPQ[si.domain];
+            ++si.domain;
+            if (++id < abPatternDepth) { // go deeper.
+                enumStack.push_back({ 0 });
+            } else { // a pattern is complete.
+                abPool.push_back(abPattern);
+                --id;
+            }
+        }
+    }
+
+    #if SZX_VERIFY_2X2_MODEL
+    float pp[7][2][2] = {
+        {{  1,  0 },
+         {  0,  1 }},
+        {{  0,  0 },
+         {  1,  1 }},
+        {{  1,  0 },
+         {  0,  0 }},
+        {{  0,  0 },
+         {  0,  1 }},
+        {{  1,  1 },
+         {  0,  0 }},
+        {{ -1,  0 },
+         {  1,  0 }},
+        {{  0,  1 },
+         {  0, -1 }},
+    };
+    abPoolSize = 7;
+    abPool.resize(abPoolSize);
+    for (ID v = 0; v < abPoolSize; ++v) {
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) {
+                abPool[v][i][j] = pp[v][i][j];
+            }
+        }
+    }
+    #endif
+
+    if (rowNum >= 4) { Log(LogSwitch::Szx::Preprocess) << "[Error] mPoolSize overflow." << endl; return false; }
+    ID mPoolSize = abPoolSize * abPoolSize;
+    List<array<ID, 2>> mPool; // a x b.
+    mPool.reserve(mPoolSize);
+    for (ID aId = 0; aId < abPoolSize; ++aId) {
+        for (ID bId = 0; bId < abPoolSize; ++bId) {
+            mPool.push_back({ aId, bId });
+        }
+    }
+
+    MpSolver mp;
+
+    // add decision variables.
+    Arr<Dvar> rUsed(mPoolSize);
+    Arr<Arr2D<Dvar>> r(mPoolSize, Arr2D<Dvar>(rowNum, colNum));
+    for (ID v = 0; v < mPoolSize; ++v) {
+        rUsed[v] = mp.addVar(MpSolver::VariableType::Bool, 0, 1, !AddIntermediateMatrixNumCut);
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) {
+                r[v][i][j] = mp.addVar(MpSolver::VariableType::Real, MinR, MaxR, 0);
+            }
+        }
+    }
+
+    // add constraints.
+    // used terms.
+    for (ID v = 0; v < mPoolSize; ++v) {
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) {
+                mp.addConstraint(MinR * rUsed[v] <= r[v][i][j]);
+                mp.addConstraint(r[v][i][j] <= MaxR * rUsed[v]);
+            }
+        }
+    }
+
+    // matched terms.
+    for (ID i = 0; i < rowNum; ++i) {
+        for (ID ii = 0; ii < rowNum; ++ii) {
+            for (ID j = 0; j < colNum; ++j) {
+                for (ID jj = 0; jj < colNum; ++jj) {
+                    for (ID k = 0; k < numRC; ++k) {
+                        for (ID kk = 0; kk < numRC; ++kk) {
+                            Expr sum;
+                            for (ID v = 0; v < mPoolSize; ++v) {
+                                const Arr2D<float> &p = abPool[mPool[v][0]];
+                                const Arr2D<float> &q = abPool[mPool[v][1]];
+                                sum += p[ii][k] * q[kk][jj] * r[v][i][j];
+                            }
+                            bool termExists = ((i == ii) && (j == jj) && (k == kk));
+                            mp.addConstraint(sum == termExists);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // intermediate matrix number cut.
+    if (AddIntermediateMatrixNumCut) {
+        Expr matNum;
+        for (ID v = 0; v < mPoolSize; ++v) { matNum += rUsed[v]; }
+        mp.addConstraint(matNum == mulNum);
+        //mp.addConstraint(matNum <= mulNum);
+    }
+
+    // solve model.
+    mp.setOutput(true);
+    //mp.setMaxThread(1);
+    mp.setTimeLimitInSecond(3600);
+    //mp.setMipFocus(MpSolver::MipFocusMode::ImproveFeasibleSolution);
+
+    // record decision.
+    if (mp.optimize()) {
+        // init solution vector.
+        auto &intermediates(*sln.mutable_intermediates());
+        intermediates.Reserve(mulNum);
+        for (ID v = 0; v < mulNum; ++v) { intermediates.Add(); }
+
+        auto &exprs(*sln.mutable_exprs());
+        exprs.Reserve(rowNum * colNum);
+        for (ID i = 0; i < rowNum; ++i) {
+            for (ID j = 0; j < colNum; ++j) { exprs.Add(); }
+        }
+
+        // retrieve values.
+        for (ID v = 0, vUsed = 0; v < mPoolSize; ++v) {
+            if (!mp.isTrue(rUsed[v])) { continue; }
+            for (ID i = 0, id = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < colNum; ++j, ++id) {
+                    Solution::addTerm(exprs[id], vUsed, mp.getValue(r[v][i][j]));
+                }
+            }
+            auto &aExpr(*intermediates[vUsed].mutable_suma());
+            for (ID i = 0, id = 0; i < rowNum; ++i) {
+                for (ID j = 0; j < numRC; ++j, ++id) {
+                    float p = abPool[mPool[v][0]][i][j];
+                    if (p != 0) { Solution::addTerm(aExpr, id, p); }
+                }
+            }
+            auto &bExpr(*intermediates[vUsed].mutable_sumb());
+            for (ID i = 0, id = 0; i < numRC; ++i) {
+                for (ID j = 0; j < colNum; ++j, ++id) {
+                    float q = abPool[mPool[v][1]][i][j];
+                    if (q != 0) { Solution::addTerm(bExpr, id, q); }
+                }
+            }
+            ++vUsed;
         }
         return true;
     }
